@@ -1,12 +1,19 @@
 from django import template
 
 from django.utils.encoding import smart_unicode
-from django.contrib.staticfiles.storage import staticfiles_storage
 
 from django_inlinecss import conf
 
 register = template.Library()
 
+def full_path(path):
+    try:
+        from django.contrib.staticfiles.storage import staticfiles_storage
+        return staticfiles_storage.path(path)
+    except ImportError:
+        from django.conf import settings
+        import os
+        return os.path.join(settings.MEDIA_ROOT, path)
 
 class InlineCssNode(template.Node):
     def __init__(self, nodelist, filter_expressions):
@@ -20,7 +27,7 @@ class InlineCssNode(template.Node):
             path = expression.resolve(context, True)
             if path is not None:
                 path = smart_unicode(path)
-            expanded_path = staticfiles_storage.path(path)
+            expanded_path = full_path(path)
 
             with open(expanded_path) as css_file:
                 css = ''.join((css, css_file.read()))
